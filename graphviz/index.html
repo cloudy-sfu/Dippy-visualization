@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Graphviz Visualizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+          crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <!-- Graphviz -->
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js"></script>
+    <script src="https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.js"></script>
+    <script src="render.js"></script>
+    <style>
+        body{min-height:100vh;min-height:-webkit-fill-available}html{height:-webkit-fill-available}main{display:flex;
+        flex-wrap:nowrap;height:100vh;height:-webkit-fill-available;max-height:100vh;overflow-x:auto;overflow-y:hidden}
+        .b-example-divider{flex-shrink:0;width:1.5rem;height:100vh;background-color:rgba(0,0,0,.1);border:solid
+        rgba(0,0,0,.15);border-width:1px 0;box-shadow:inset 0 .5em 1.5em rgba(0,0,0,.1),inset 0 .125em .5em
+        rgba(0,0,0,.15)}.bi{vertical-align:-.125em;pointer-events:none;fill:currentColor}.dropdown-toggle{outline:0}
+        .nav-flush .nav-link{border-radius:0}.btn-toggle{display:inline-flex;align-items:center;padding:.25rem .5rem;
+        font-weight:600;color:rgba(0,0,0,.65);background-color:transparent;border:0}.btn-toggle:focus,
+        .btn-toggle:hover{color:rgba(0,0,0,.85);background-color:#d2f4ea}.btn-toggle::before{width:1.25em;line-height:0;
+        content:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='rgba%280,0,0,.5%29' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 14l6-6-6-6'/%3e%3c/svg%3e");
+        transition:transform .35s ease;transform-origin:.5em 50%}.btn-toggle[aria-expanded=true]{color:rgba(0,0,0,.85)}
+        .btn-toggle[aria-expanded=true]::before{transform:rotate(90deg)}.btn-toggle-nav a{display:inline-flex;
+        padding:.1875rem .5rem;margin-top:.125rem;margin-left:1.25rem;text-decoration:none}.btn-toggle-nav a:focus,
+        .btn-toggle-nav a:hover{background-color:#d2f4ea}.scrollarea{overflow-y:auto}.fw-semibold{font-weight:600}
+        .lh-tight{line-height:1.25}
+    </style>
+    <script>
+        let dots = [];
+        let dotIndex = 0;
+        // https://stackoverflow.com/questions/16505333/get-the-data-of-uploaded-file-in-javascript
+        function init() {
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect, false);
+        }
+        function handleFileLoad(event) {
+            dots = JSON.parse(event.target.result);
+            dotIndex = dots.length - 1;
+            render();
+        }
+        function handleFileSelect(event) {
+            const reader = new FileReader();
+            reader.onload = handleFileLoad;
+            reader.readAsText(event.target.files[0]);
+        }
+    </script>
+
+</head>
+<body onload="init()">
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3 p-3 d-flex flex-column" style="height: 100vh;">
+            <a href="index.html" class="d-flex align-items-center pb-3 mb-3 link-dark text-decoration-none border-bottom">
+                <span class="fs-5 fw-semibold">Graphviz Visualizer</span>
+            </a>
+            <ul class="list-unstyled ps-0 flex-grow-1" style="overflow-y: auto;">
+                <li class="mb-1">
+                    <ul class="btn-toggle-nav list-unstyled fw-semibold pb-1"><li>
+                        <a role="button" class="link-dark rounded" onclick="prevgraph()">Previous step</a>
+                    </li></ul>
+                    <ul class="btn-toggle-nav list-unstyled fw-semibold pb-1"><li>
+                        <a role="button" class="link-dark rounded" onclick="nextgraph()">Next step</a>
+                    </li></ul>
+                    <ul class="btn-toggle-nav list-unstyled fw-semibold pb-1"><li>
+                        <a role="button" class="link-dark rounded" onclick="resetgraph()">Reset zoom</a>
+                    </li></ul>
+                    <ul class="btn-toggle-nav list-unstyled fw-semibold pb-1"><li>
+                        <input class="link-dark rounded" style="margin-left: 1.5rem;"
+                               id="fileInput" type="file" name="file" />
+                    </li></ul>
+                </li>
+                <li class="nav-link text-muted">
+                    1. Move around the graph with click + drag<br>
+                    2. Zoom with mousewheel<br>
+                    3. Move between steps with the next and previous step buttons<br>
+                </li>
+            </ul>
+            <ul class="list-unstyled ps-0 mb-0">
+                <li class="border-top my-3"></li>
+                <li class="mb-1">
+                    <div class="nav-link text-muted">Modified by cloudy-sfu, 2023.</div>
+                </li>
+            </ul>
+        </div>
+        <!-- End of the sidebar -->
+        <div class="col-md-9 p-0 d-flex flex-column" style="overflow-y: auto;">
+            <h5 class="text-center p-3"><span id="steptitle">Step </span></h5>
+            <div class="flex-grow-1" id="centerbox" style="width: 100%;"></div>
+            <div id="bottombox"></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

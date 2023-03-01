@@ -1,0 +1,16 @@
+coinor.blimpy==2.0.0
+coinor.dippy==1.95.2
+coinor.gimpy==2.1.1
+cycler==0.11.0
+fonttools==4.38.0
+future==0.18.3
+kiwisolver==1.4.4
+matplotlib==3.5.3
+numpy==1.21.6
+packaging==23.0
+Pillow==9.4.0
+PuLP==2.7.0
+pyparsing==3.0.9
+python-dateutil==2.8.2
+six==1.16.0
+typing_extensions==4.5.0
