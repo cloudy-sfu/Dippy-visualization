@@ -60,39 +60,43 @@
                 <span class="fs-5 fw-semibold">Graphviz Visualizer</span>
             </a>
             <ul class="list-unstyled ps-0 flex-grow-1" style="overflow-y: auto;">
-                <li class="mb-1">
-                    <ul class="btn-toggle-nav list-unstyled fw-semibold pb-1"><li>
-                        <a role="button" class="link-dark rounded" onclick="prevgraph()">Previous step</a>
-                    </li></ul>
-                    <ul class="btn-toggle-nav list-unstyled fw-semibold pb-1"><li>
-                        <a role="button" class="link-dark rounded" onclick="nextgraph()">Next step</a>
-                    </li></ul>
-                    <ul class="btn-toggle-nav list-unstyled fw-semibold pb-1"><li>
-                        <a role="button" class="link-dark rounded" onclick="resetgraph()">Reset zoom</a>
-                    </li></ul>
-                    <ul class="btn-toggle-nav list-unstyled fw-semibold pb-1"><li>
-                        <input class="link-dark rounded" style="margin-left: 1.5rem;"
-                               id="fileInput" type="file" name="file" />
-                    </li></ul>
-                </li>
-                <li class="nav-link text-muted">
+                <li class="mb-1"><b>Instructions</b></li>
+                <li class="mb-1 text-muted">
                     1. Move around the graph with click + drag<br>
                     2. Zoom with mousewheel<br>
                     3. Move between steps with the next and previous step buttons<br>
                 </li>
+                <li class="border-top my-3"></li>
+                <li>
+                    <input class="link-dark rounded" id="fileInput" type="file" name="file" />
+                </li>
+                <li class="border-top my-3"></li>
+                <li class="btn-toggle-nav fw-semibold pb-1">
+                    <a role="button" class="link-dark rounded" onclick="resetgraph()">Reset zoom</a>
+                </li>
             </ul>
             <ul class="list-unstyled ps-0 mb-0">
                 <li class="border-top my-3"></li>
-                <li class="mb-1">
-                    <div class="nav-link text-muted">Modified by cloudy-sfu, 2023.</div>
+                <li class="mb-1 text-muted">
+                    Modified by cloudy-sfu, 2023.
                 </li>
             </ul>
         </div>
         <!-- End of the sidebar -->
-        <div class="col-md-9 p-0 d-flex flex-column" style="overflow-y: auto;">
+        <div class="col-md-9 p-0 d-flex flex-column carousel slide" style="height: 100vh;" data-bs-ride="carousel">
             <h5 class="text-center p-3"><span id="steptitle">Step </span></h5>
-            <div class="flex-grow-1" id="centerbox" style="width: 100%;"></div>
-            <div id="bottombox"></div>
+            <div class="flex-grow-1 carousel-inner" id="centerbox"></div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls"
+                    data-bs-slide="prev" onclick="prevgraph()">
+                <span class="carousel-control-prev-icon bg-dark" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleControls"
+                    data-bs-slide="next" onclick="nextgraph()">
+                <span class="carousel-control-next-icon bg-dark" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+<!--            <div id="bottombox"></div>-->
         </div>
     </div>
 </div>
