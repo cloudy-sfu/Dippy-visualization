@@ -27,7 +27,7 @@ function render() {
         .scale(0.95) // Graph size equals SVG size
         .renderDot(dot_str) // Render the DOT string
     // Add caption for branch/bound step
-    document.getElementById("steptitle").innerHTML = "Step " + String(getdotIndex());
+    document.getElementById("steptitle").innerHTML = "Step " + String(dotIndex);
     // Center graph
     d3.select('g').attr('transform','translate(' +
         String(document.getElementById("centerbox").clientWidth/2) + ',' +
@@ -46,21 +46,10 @@ function prevgraph() {
 }
 
 /*
-Called on 'reset zoom/pan' button click, re-renders the graph at default zoom and position
-*/
-function resetgraph() {
-    render();
-}
-
-/*
 Called on 'next step' button click, renders the branch and bound tree for the next step
 */
 function nextgraph() {
     // Update dotIndex (allowing for wraparound)
     dotIndex = (dotIndex + 1) % dots.length;
     render();
-}
-
-function getdotIndex() {
-    return dotIndex
 }
