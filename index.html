@@ -46,9 +46,17 @@
                 <li class="my-3">
                     <input class="link-dark rounded" id="fileInput" type="file" name="file" />
                 </li>
-                <li class="my-3 btn-toggle-nav fw-semibold">
+                <li class="btn-toggle-nav fw-semibold">
                     <a role="button" class="link-dark rounded"  style="margin-left: 0;" onclick="render();">
                         Reset zoom
+                    </a>
+                </li>
+                <li class="btn-toggle-nav fw-semibold">
+                    <a role="button" class="link-dark rounded"  style="margin-left: 0;"
+                       onclick="document.getElementById('centerbox').innerHTML = '';
+                                document.getElementById('steptitle').innerText = 'Step ';
+                                document.getElementById('fileInput').value = null;">
+                        Clear
                     </a>
                 </li>
             </ul>
