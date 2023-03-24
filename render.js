@@ -2,7 +2,6 @@
 Contains all custom javascript functionality to render graphs and allow for user interaction
 */
 
-// let dotIndex = dots.length - 1;
 /*
 Function to render the branch and bound tree in the centrebox div container. Parses a DOT
 file from TBD format.
@@ -52,4 +51,17 @@ function nextgraph() {
     // Update dotIndex (allowing for wraparound)
     dotIndex = (dotIndex + 1) % dots.length;
     render();
+}
+
+function export_html() {
+    const text = document.getElementById("centerbox").innerHTML;
+    if (text.length > 0) {
+        const blob = new Blob([text], {type: "text/plain;charset=utf-8"});
+        const link = document.createElement('a');
+        link.download = document.getElementById('fileInput').files[0].name.replace(/\.[^/.]+$/, "")
+            + " " + document.getElementById("steptitle").textContent + ".svg";
+        link.href = window.URL.createObjectURL(blob);
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+    }
 }
