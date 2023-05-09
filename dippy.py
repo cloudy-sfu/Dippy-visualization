@@ -1,26 +1,29 @@
 from __future__ import print_function
 from __future__ import absolute_import
-
-import json
 from builtins import str
 from past.builtins import basestring
 from builtins import object
 import pulp
-import os
+
+import sys
 
 try:
     import path.py
 except ImportError:
     pass
+
 from .dipapi import DipAPI
+
 from ._dippy import *
 
+gimpy_installed = True
 try:
-    from coinor.gimpy import BinaryTree
-
-    gimpy_installed = True
+    from src.gimpy import BinaryTree
 except ImportError:
-    gimpy_installed = False
+    try:
+        from coinor.gimpy import BinaryTree
+    except ImportError:
+        gimpy_installed = False
 
 if gimpy_installed:
     try:
@@ -32,37 +35,33 @@ if gimpy_installed:
 else:
     grumpy_installed = False
 
-
 class DipError(Exception):
     """
     Dip Exception
     """
-
-
+	
 # DIP solver status
-# enum DecompSolverStatus {
+#enum DecompSolverStatus {
 #   DecompSolStatError,
 #   DecompSolStatOptimal,
 #   DecompSolStatFeasible,
 #   DecompSolStatInfeasible,
 #   DecompSolStatNoSolution
-# };
-DipSolStatError = 0
-DipSolStatOptimal = 1
-DipSolStatFeasible = 2
+#};
+DipSolStatError      = 0
+DipSolStatOptimal    = 1
+DipSolStatFeasible   = 2
 DipSolStatInfeasible = 3
 DipSolStatNoSolution = 4
 DipStatus = {
-    DipSolStatError: "Error",
-    DipSolStatOptimal: "Optimal",
-    DipSolStatFeasible: "Feasible",
-    DipSolStatInfeasible: "Infeasible",
-    DipSolStatNoSolution: "No solution"
-}
+             DipSolStatError:      "Error",
+             DipSolStatOptimal:    "Optimal",
+             DipSolStatFeasible:   "Feasible",
+             DipSolStatInfeasible: "Infeasible",
+             DipSolStatNoSolution: "No solution"
+            }
 
 _Solve = Solve
-
-
 def Solve(prob, params=None):
     """
     Solve a DipProblem instance, returning a solution object
@@ -98,7 +97,7 @@ def Solve(prob, params=None):
         params['pyRelaxedSolver'] = '0'
     if prob.is_solution_feasible == None:
         params['pyIsSolutionFeasible'] = '0'
-
+    
     if (prob.generate_cuts == None) and (prob.generate_cuts_from_node == None):
         params['pyGenerateCuts'] = '0'
 
@@ -110,7 +109,7 @@ def Solve(prob, params=None):
         prob.gen_cuts_node = True
     else:
         prob.gen_cuts_node = False
-
+    
     if prob.heuristics == None:
         params['pyHeuristics'] = '0'
     if prob.init_vars == None:
@@ -137,19 +136,19 @@ def Solve(prob, params=None):
 
     # DIP only solves minimisation problems
     if prob.sense == pulp.LpMaximize:
-        raise DipError("DIP assumes a minimize objective, but DipProblem has " +
+        raise DipError("DIP assumes a minimize objective, but DipProblem has "+ 
                        "maximize objective.\n" +
                        "Use prob.sense = pulp.LpMinimize and prob.objective " +
                        "*= -1 to remedy")
-
+    
     # DIP only allows non-negative variables. This is difficult
     # to transform automatically, so request re-formulation
     for v in prob.variables():
         if v.lowBound < 0:
             raise DipError("Variable %s has negative lower bound, please " +
-                           "re-formulate using sum of non-negative variables"
+                           "re-formulate using sum of non-negative variables" 
                            % v.name)
-
+        
     # call the Solve method from _dippy
     try:
         status, message, solList, dualList = _Solve(prob, processed)
@@ -158,12 +157,12 @@ def Solve(prob, params=None):
 
         if prob.display_mode == 'svg' and gimpy_installed:
             if prob.display_interval is not None:
-                prob.Tree.write_as_svg(filename="%s_%d" % (prob.svg_prefix,
-                                                           prob.last_svg + 1),
-                                       prevfile="%s_%d" % (prob.svg_prefix,
-                                                           prob.last_svg))
+                prob.Tree.write_as_svg(filename = "%s_%d" % (prob.svg_prefix, 
+                                                             prob.last_svg + 1),
+                                       prevfile = "%s_%d" % (prob.svg_prefix, 
+                                                             prob.last_svg))
                 prob.last_svg += 1
-
+            
     except Exception as ex:
         print("Error returned from _dippy")
         print(ex)
@@ -183,7 +182,7 @@ def Solve(prob, params=None):
         solution = solDict
         for v in prob.variables():
             v.varValue = solution[v]
-
+        
     if dualList is None:
         duals = None
     else:
@@ -199,20 +198,19 @@ def Solve(prob, params=None):
     # return status, message, solution and duals
     return status, message, solution, duals
 
-
 def createBranchLabel(lbs, ubs):
     maxLabelWidth = 20
-
+      
     both = set(lbs.keys()) & set(ubs.keys())
     lbOnly = set(lbs.keys()) - both
     ubOnly = set(ubs.keys()) - both
-
+                        
     bothStr = ''
     first = True
     currWidth = len(bothStr)
     for l in both:
         addStr = str(int(lbs[l])) + '<=' + \
-                 ''.join(x for x in str(l)
+                 ''.join(x for x in str(l) 
                          if x not in '()_') \
                  + '<=' + str(int(ubs[l]))
         if first:
@@ -230,15 +228,15 @@ def createBranchLabel(lbs, ubs):
         else:
             bothStr += '\n' + addStr
             currWidth = len(addStr)
-    #            bothStr += ' ...'
-    #            break
+#            bothStr += ' ...'
+#            break
 
     lbOnlyStr = ''
     first = True
     currWidth = len(lbOnlyStr)
     for l in lbOnly:
         addStr = str(int(lbs[l])) + '<=' + \
-                 ''.join(x for x in str(l)
+                 ''.join(x for x in str(l) 
                          if x not in '()_')
         if first:
             newWidth = len(addStr) + currWidth
@@ -255,14 +253,14 @@ def createBranchLabel(lbs, ubs):
         else:
             lbOnlyStr += '\n' + addStr
             currWidth = len(addStr)
-    #            lbOnlyStr += ' ...'
-    #            break
+#            lbOnlyStr += ' ...'
+#            break
 
     ubOnlyStr = ''
     first = True
     currWidth = len(ubOnlyStr)
     for l in ubOnly:
-        addStr = ''.join(x for x in str(l)
+        addStr = ''.join(x for x in str(l) 
                          if x not in '()_') \
                  + '<=' + str(int(ubs[l]))
         if first:
@@ -280,8 +278,8 @@ def createBranchLabel(lbs, ubs):
         else:
             ubOnlyStr += '\n' + addStr
             currWidth = len(addStr)
-    #            ubOnlyStr += ' ...'
-    #            break
+#            ubOnlyStr += ' ...'
+#            break
 
     labelStr = ''
     first = True
@@ -300,19 +298,15 @@ def createBranchLabel(lbs, ubs):
         else:
             labelStr += '\n'
         labelStr += ubOnlyStr
-
+        
     return labelStr
 
-
 import string
-
-
 def asCplexName(name):
-    # to remove illegal characters from the names
-    trans = str.maketrans("-+[] ->/", "________")
-
+    #to remove illegal characters from the names
+    trans = str.maketrans("-+[] ->/","________")
+    
     return str(name).translate(trans)
-
 
 class DipProblem(pulp.LpProblem, DipAPI):
 
@@ -325,16 +319,15 @@ class DipProblem(pulp.LpProblem, DipAPI):
         self.relaxed_solver = kwargs.pop('relaxed_solver', None)
         self.is_solution_feasible = kwargs.pop('is_solution_feasible', None)
         self.generate_cuts = kwargs.pop('generate_cuts', None)
-        self.generate_cuts_from_node = kwargs.pop('generate_cuts_from_node', None)
+        self.generate_cuts_from_node = kwargs.pop('generate_cuts_from_node', 
+                                                  None)
         self.heuristics = kwargs.pop('heuristics', None)
         self.init_vars = kwargs.pop('init_vars', None)
         self.display_mode = kwargs.pop('display_mode', 'off')
         self.display_interval = kwargs.pop('display_interval', 1)
         self.layout = kwargs.pop('layout', 'dot')
         self.svg_prefix = kwargs.pop('svg_prefix', 'tree')
-        # edited by cloudy-sfu@github
-        self.json_path = kwargs.pop('json_path', None)
-
+        
         if self.display_mode != 'off':
             if not gimpy_installed:
                 print("GiMPy not installed. Display mode set to 'off'")
@@ -356,10 +349,23 @@ class DipProblem(pulp.LpProblem, DipAPI):
         self._subproblem = []
         self.relaxation = RelaxationCollection(self)
 
+    def addToTree(self, force=False):
+        numNodes = len(self.Tree.get_node_list())
+        if (self.display_interval is None) or (numNodes == 1):
+            dots = []
+        else:
+            with open(self.json_path, 'r') as f:
+                dots = json.load(f)
+        if force or (numNodes % self.display_interval in [0, 1]):
+            x = self.Tree.to_string()
+            dots.append(x.splitlines())
+        with open(self.json_path, 'w') as f:
+            json.dump(dots, f, indent=4)
+
     def deepcopy(self):
         # callback functions can be passed to class constructor as keyword 
         # arguments
-        dipcopy = DipProblem(name=self.name, sense=self.sense)
+        dipcopy = DipProblem(name = self.name, sense = self.sense)
         dipcopy.branch_method = self.branch_method
         dipcopy.is_solution_feasible = self.is_solution_feasible
         dipcopy.generate_cuts = self.generate_cuts
@@ -371,7 +377,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         if dipcopy.objective != None:
             dipcopy.objective = self.objective.copy()
         dipcopy.constraints = {}
-        for k, v in self.constraints.items():
+        for k,v in self.constraints.items():
             dipcopy.constraints[k] = v.copy()
         dipcopy.sos1 = self.sos1.copy()
         dipcopy.sos2 = self.sos2.copy()
@@ -381,7 +387,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
             dipcopy.relaxation[k] = self.relaxation[k].copy()
 
         return dipcopy
-
+    
     def variables(self):
         """
         Returns a list of the problem variables
@@ -403,7 +409,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
                 variables.update(c)
         variables = list(variables)
         variables = sorted(variables, key=lambda variable: variable.name)
-
+        
         return variables
 
     def getObjective(self):
@@ -460,10 +466,10 @@ class DipProblem(pulp.LpProblem, DipAPI):
         """
         return self.relaxation.dict
 
-    def writeFull(self, instancefile, blockfile, mip=True):
+    def writeFull(self, instancefile, blockfile, mip = True):
         f = open(instancefile, "w")
         b = open(blockfile, "w")
-        f.write("\\* " + self.name + " *\\\n")
+        f.write("\\* "+self.name+" *\\\n")
         if self.sense == 1:
             f.write("Minimize\n")
         else:
@@ -471,7 +477,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         wasNone, dummyVar = self.fixObjective()
         objName = self.objective.name
         if not objName: objName = "OBJ"
-        f.write(self.objective.asCplexLpAffineExpression(objName, constant=0))
+        f.write(self.objective.asCplexLpAffineExpression(objName, constant = 0))
         f.write("Subject To\n")
         b.write("NBLOCKS\n")
         b.write("%i\n" % len(self.relaxation.dict))
@@ -480,32 +486,32 @@ class DipProblem(pulp.LpProblem, DipAPI):
         blockId = 0
         for r in self.relaxation.dict:
             rname = asCplexName(str(r))
-            b.write("BLOCK %d\n" % blockId)
+            b.write("BLOCK %d\n" % blockId) 
             for k in self.relaxation.dict[r].constraints:
-                f.write(self.relaxation.dict[r].constraints[k].asCplexLpConstraint(str(k) + '_' + rname))
-                b.write(str(k) + '_' + rname + '\n')
+                f.write(self.relaxation.dict[r].constraints[k].asCplexLpConstraint(str(k)+'_'+rname))
+                b.write(str(k)+'_'+rname+'\n')
             blockId += 1
         vs = list(self.variables())
         # check if any names are longer than 100 characters
         long_names = [v.name for v in vs if len(v.name) > 100]
         if long_names:
-            raise PulpError('Variable names too long for Lp format\n'
-                            + str(long_names))
+            raise PulpError('Variable names too long for Lp format\n' 
+                                + str(long_names))
         # check for repeated names
         repeated_names = {}
         for v in vs:
             repeated_names[v.name] = repeated_names.get(v.name, 0) + 1
         repeated_names = [(key, value) for key, value in list(repeated_names.items())
-                          if value >= 2]
+                            if value >= 2]
         if repeated_names:
-            raise PulpError('Repeated variable names in Lp format\n'
-                            + str(repeated_names))
+            raise PulpError('Repeated variable names in Lp format\n' 
+                                + str(repeated_names))
         # Bounds on non-"positive" variables
         # Note: XPRESS and CPLEX do not interpret integer variables without 
         # explicit bounds
         if mip:
             vg = [v for v in vs if not (v.isPositive() and v.cat == pulp.LpContinuous) \
-                  and not v.isBinary()]
+                and not v.isBinary()]
         else:
             vg = [v for v in vs if not v.isPositive()]
         if vg:
@@ -527,7 +533,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         f.close()
         self.restoreObjective(wasNone, dummyVar)
 
-    def writeRelaxed(self, block, filename, mip=True):
+    def writeRelaxed(self, block, filename, mip = True):
         """
         Write the given block into a .lp file.
         
@@ -543,7 +549,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         """
         relaxation = self.relaxation[block]
         f = open(filename, "w")
-        f.write("\\* " + relaxation.name + " *\\\n")
+        f.write("\\* "+relaxation.name+" *\\\n")
         f.write("Subject To\n")
         ks = list(relaxation.constraints.keys())
         ks.sort()
@@ -558,7 +564,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         if mip:
             vg = [v for v in vs if not (v.isPositive() and \
                                         v.cat == pulp.LpContinuous) \
-                  and not v.isBinary()]
+                and not v.isBinary()]
         else:
             vg = [v for v in vs if not v.isPositive()]
         if vg:
@@ -568,7 +574,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         # Integer non-binary variables
         if mip:
             vg = [v for v in vs if v.cat == pulp.LpInteger and \
-                  not v.isBinary()]
+                                   not v.isBinary()]
             if vg:
                 f.write("Generals\n")
                 for v in vg: f.write("%s\n" % v.name)
@@ -579,7 +585,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
                 for v in vg: f.write("%s\n" % v.name)
         f.write("End\n")
         f.close()
-
+        
     def chooseBranchSet(self, xhat):
         """
         Finds the best branch for a fractional solution
@@ -594,19 +600,19 @@ class DipProblem(pulp.LpProblem, DipAPI):
         try:
             if self.branch_method is None:
                 return None
-
+                        
             xhatDict = dict(xhat)
             setVars = set(self.variables())
             setXhatVars = set(xhatDict.keys())
             diff = setVars.symmetric_difference(setXhatVars)
             if len(diff) > 0:
                 raise DipError("Solution and variable list don't match in chooseBranchSet")
-
+    
             branch_sets = self.branch_method(self, xhatDict)
 
             if branch_sets is None:
                 return None
-
+                            
             if (branch_sets[0] or branch_sets[1]) and (branch_sets[2] or branch_sets[3]):
                 return branch_sets
             else:
@@ -614,7 +620,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         except Exception as ex:
             errorStr = "Error in chooseBranchSet\n%s" % ex
             raise DipError(errorStr)
-
+          
     def decipherNode(self, output):
         outputDict = dict(output)
         if "xhat" in list(outputDict.keys()):
@@ -623,23 +629,8 @@ class DipProblem(pulp.LpProblem, DipAPI):
         if "bounds" in list(outputDict.keys()):
             bounds = outputDict["bounds"]
             outputDict["bounds"] = dict(bounds)
-
+            
         return outputDict
-
-    def addToTree(self, force=False):
-        if self.json_path is None:
-            return
-        numNodes = len(self.Tree.get_node_list())
-        if (self.display_interval is None) or (numNodes == 1):
-            dots = []
-        else:
-            with open(self.json_path, 'r') as f:
-                dots = json.load(f)
-        if force or (numNodes % self.display_interval in [0, 1]):
-            x = self.Tree.to_string()
-            dots.append(x.splitlines())
-        with open(self.json_path, 'w') as f:
-            json.dump(dots, f, indent=4)
 
     def postProcessNode(self, node):
         """
@@ -649,9 +640,9 @@ class DipProblem(pulp.LpProblem, DipAPI):
         output (list of (parameter, value) tuples) = list of output values 
         from the node
         """
-        try:
+        try:        
             nodeDict = self.decipherNode(node)
-
+            
             if gimpy_installed:
                 nodeInd = nodeDict["nodeIndex"]
                 parentInd = nodeDict["parentIndex"]
@@ -662,7 +653,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
                     branch_direction = 'L'
                 else:
                     branch_direction = 'R'
-
+                    
                 if nodeStatus == 'Infeasible':
                     status = 'I'
                     BAKstatus = 'infeasible'
@@ -679,9 +670,9 @@ class DipProblem(pulp.LpProblem, DipAPI):
                     status = 'P'
                     BAKstatus = 'fathomed'
                     color = 'red'
-
+                    
                 if nodeStatus != 'Infeasible':
-                    label = status + ": " + "%.1f" % nodeQuality
+                    label = status + ": " + "%.1f"%nodeQuality
                 else:
                     label = 'I'
 
@@ -689,21 +680,21 @@ class DipProblem(pulp.LpProblem, DipAPI):
                 if parentInd == -1:
                     if self.layout == 'bak':
                         self.Tree.AddOrUpdateNode(nodeInd, parentInd,
-                                                  branch_direction, BAKstatus,
+                                                  branch_direction, BAKstatus, 
                                                   nodeQuality, None, None)
                     else:
-                        self.Tree.add_root(nodeInd, label=label,
-                                           status='C', obj=nodeQuality,
-                                           color=color, style='filled',
-                                           fillcolor=color)
+                        self.Tree.add_root(nodeInd, label = label, 
+                                           status = 'C', obj = nodeQuality, 
+                                           color = color, style = 'filled', 
+                                           fillcolor = color)
                     if self.Tree.attr['display'] == 'svg':
                         if self.display_interval is not None:
                             if numNodes % self.display_interval in [0, 1]:
-                                self.Tree.write_as_svg(filename="%s_0"
-                                                                % self.svg_prefix,
-                                                       nextfile="%s_1"
-                                                                % self.svg_prefix,
-                                                       highlight=nodeInd)
+                                self.Tree.write_as_svg(filename = "%s_0" 
+                                                       % self.svg_prefix, 
+                                                       nextfile = "%s_1" 
+                                                       % self.svg_prefix, 
+                                                       highlight = nodeInd)
                                 self.last_svg = 0
                     numNodes += 1
                 else:
@@ -714,48 +705,34 @@ class DipProblem(pulp.LpProblem, DipAPI):
                     edge_label = self.Tree.get_edge_attr(parentInd, n, 'label')
                     self.Tree.del_node(n)
                     if self.layout == 'bak':
-                        self.Tree.AddOrUpdateNode(nodeInd, parentInd,
-                                                  branch_direction, 'branched',
+                        self.Tree.AddOrUpdateNode(nodeInd, parentInd, 
+                                                  branch_direction, 'branched', 
                                                   nodeQuality, None, None)
                     elif branch_direction == 'L':
-                        self.Tree.add_left_child(nodeInd, parentInd,
-                                                 label=label,
-                                                 status=status,
-                                                 obj=nodeQuality,
-                                                 color=color,
-                                                 style='filled',
-                                                 fillcolor=color)
+                        self.Tree.add_left_child(nodeInd, parentInd, 
+                                                 label = label, 
+                                                 status = status, 
+                                                 obj = nodeQuality, 
+                                                 color = color, 
+                                                 style = 'filled', 
+                                                 fillcolor = color)
                     else:
-                        self.Tree.add_right_child(nodeInd, parentInd,
-                                                  label=label,
-                                                  status=status,
-                                                  obj=nodeQuality,
-                                                  color=color,
-                                                  style='filled',
-                                                  fillcolor=color)
+                        self.Tree.add_right_child(nodeInd, parentInd, 
+                                                  label = label, 
+                                                  status = status, 
+                                                  obj = nodeQuality, 
+                                                  color = color, 
+                                                  style = 'filled', 
+                                                  fillcolor = color)
                     if edge_label is not None:
-                        self.Tree.set_edge_attr(parentInd, nodeInd,
+                        self.Tree.set_edge_attr(parentInd, nodeInd, 
                                                 'label', edge_label)
-                    if self.Tree.attr['display'] == 'svg':
-                        if self.display_interval is not None:
-                            if numNodes % self.display_interval in [0, 1]:
-                                self.Tree.write_as_svg(filename="%s_%d"
-                                                                % (self.svg_prefix,
-                                                                   self.last_svg + 1),
-                                                       prevfile="%s_%d"
-                                                                % (self.svg_prefix,
-                                                                   self.last_svg),
-                                                       nextfile="%s_%d"
-                                                                % (self.svg_prefix,
-                                                                   self.last_svg + 2),
-                                                       highlight=nodeInd)
-                                self.last_svg += 1
-                if (self.Tree.attr['display'] == 'python-web') or (self.Tree.attr['display'] == 'node-web'):
+                if self.Tree.attr['display'] == 'node-web':
                     if self.display_interval is not None:
                         self.addToTree()
             if self.post_process_node is not None:
                 self.post_process_node(self, nodeDict)
-
+          
         except Exception as ex:
             errorStr = "Error in postProcessNode\n%s" % ex
             raise DipError(errorStr)
@@ -768,7 +745,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         output (list of (parameter, value) tuples) describing branching decision
         """
         try:
-
+          
             outputDict = dict(branchInfo)
 
             if gimpy_installed:
@@ -778,63 +755,63 @@ class DipProblem(pulp.LpProblem, DipAPI):
                 for n in outputDict:
                     if n == 'pDownUB':
                         if self.layout == 'bak':
-                            self.Tree.AddOrUpdateNode(-numNodes,
-                                                      nodeInd, 'L',
-                                                      'candidate',
+                            self.Tree.AddOrUpdateNode(-numNodes, 
+                                                      nodeInd, 'L', 
+                                                      'candidate', 
                                                       nodeQuality, None, None)
                         else:
-                            self.Tree.add_left_child(-numNodes,
-                                                     nodeInd,
-                                                     label='C',
-                                                     status='C',
-                                                     obj=nodeQuality,
-                                                     color='yellow',
-                                                     style='filled',
-                                                     fillcolor='yellow')
+                            self.Tree.add_left_child(-numNodes, 
+                                                     nodeInd, 
+                                                     label = 'C', 
+                                                     status = 'C', 
+                                                     obj = nodeQuality, 
+                                                     color = 'yellow', 
+                                                     style = 'filled', 
+                                                     fillcolor = 'yellow')
                         if 'pDownLB' in outputDict:
                             lbs = outputDict['pDownLB']
                         else:
                             lbs = {}
                         ubs = outputDict['pDownUB']
                         labelStr = createBranchLabel(lbs, ubs)
-                        self.Tree.set_edge_attr(nodeInd,
-                                                -numNodes,
+                        self.Tree.set_edge_attr(nodeInd, 
+                                                -numNodes, 
                                                 'label', labelStr)
                         numNodes += 1
 
                     elif n == 'pUpLB':
                         if self.layout == 'bak':
-                            self.Tree.AddOrUpdateNode(-numNodes,
-                                                      nodeInd, 'R',
-                                                      'candidate',
+                            self.Tree.AddOrUpdateNode(-numNodes, 
+                                                      nodeInd, 'R', 
+                                                      'candidate', 
                                                       nodeQuality, None, None)
                         else:
-                            self.Tree.add_right_child(-numNodes,
-                                                      nodeInd,
-                                                      label='C',
-                                                      status='C',
-                                                      obj=nodeQuality,
-                                                      color='yellow',
-                                                      style='filled',
-                                                      fillcolor='yellow')
+                            self.Tree.add_right_child(-numNodes, 
+                                                      nodeInd, 
+                                                      label = 'C', 
+                                                      status = 'C', 
+                                                      obj = nodeQuality, 
+                                                      color = 'yellow', 
+                                                      style = 'filled', 
+                                                      fillcolor = 'yellow')
                         if 'pUpUB' in outputDict:
                             ubs = outputDict['pUpUB']
                         else:
                             ubs = {}
                         lbs = outputDict['pUpLB']
                         labelStr = createBranchLabel(lbs, ubs)
-                        self.Tree.set_edge_attr(nodeInd,
-                                                -numNodes,
+                        self.Tree.set_edge_attr(nodeInd, 
+                                                -numNodes, 
                                                 'label', labelStr)
                         numNodes += 1
 
                 if self.Tree.get_node_attr(nodeInd, 'color') == 'yellow':
                     self.Tree.set_node_attr(nodeInd, 'color', 'green')
                     self.Tree.set_node_attr(nodeInd, 'fillcolor', 'green')
-
+        
             if self.post_process_branch is not None:
                 self.post_process_branch(self, outputDict)
-
+  
         except Exception as ex:
             errorStr = "Error in postProcessBranch\n%s" % ex
             raise DipError(errorStr)
@@ -858,7 +835,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         dictionary of non-zero values for variables
         """
         try:
-
+          
             # transform redCostX into a dictionary
             redCostDict = dict(redCostX)
             setVars = set(self.variables())
@@ -868,16 +845,16 @@ class DipProblem(pulp.LpProblem, DipAPI):
                 print(diff)
                 raise DipError("Reduced cost and variable list don't match in",
                                "solveRelaxed")
-
+    
             status, dvs = self.relaxed_solver(self, key, redCostDict, target)
-
+    
             if len(dvs) > 0:
                 dvs_with_costs = []
                 for var in dvs:
                     if isinstance(var, dict):
-                        cost = sum(self.objective[i] * var[i] for i in var
+                        cost = sum(self.objective[i]*var[i] for i in var
                                    if i in self.objective)
-                        red_cost = sum(redCostDict[i] * var[i] for i in var
+                        red_cost = sum(redCostDict[i]*var[i] for i in var
                                        if i in redCostDict)
                         dvs_with_costs.append((cost, red_cost, var))
                     else:
@@ -885,7 +862,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
                 return status, dvs_with_costs
             else:
                 return status, dvs
-
+  
         except Exception as ex:
             errorStr = "Error in solveRelaxed\n%s" % ex
             raise DipError(errorStr)
@@ -902,16 +879,16 @@ class DipProblem(pulp.LpProblem, DipAPI):
         (boolean) = false if not feasible (generate cuts) or true if feasible
         """
         try:
-
+              
             solDict = dict(sol)
             setVars = set(self.variables())
             setSolVars = set(solDict.keys())
             diff = setVars.symmetric_difference(setSolVars)
             if len(diff) > 0:
                 raise DipError("Solution and variable list don't match in isUserFeasible")
-
+    
             return self.is_solution_feasible(self, solDict, tol)
-
+          
         except Exception as ex:
             errorStr = "Error in isUserFeasible\n%s" % ex
             raise DipError(errorStr)
@@ -930,7 +907,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         as values with getName, getLb and getUb bound methods
         """
         try:
-
+    
             nodeDict = self.decipherNode(node)
             xhatDict = nodeDict["xhat"]
             setVars = set(self.variables())
@@ -938,13 +915,13 @@ class DipProblem(pulp.LpProblem, DipAPI):
             diff = setVars.symmetric_difference(setXhatVars)
             if len(diff) > 0:
                 raise DipError("Solution and variable list don't match in generateCuts")
-
+    
             # Generate a list of cuts as LpConstraints
             if self.gen_cuts:
                 cuts = self.generate_cuts(self, xhatDict)
             else:
                 cuts = None
-
+    
             if self.gen_cuts_node:
                 moreCuts = self.generate_cuts_from_node(self, nodeDict)
                 if moreCuts is not None:
@@ -952,7 +929,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
                         cuts = moreCuts
                 else:
                     cuts.extend(moreCuts)
-
+                    
             if cuts is not None:
                 if len(cuts) > 0:
                     return cuts
@@ -977,7 +954,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         dictionary of non-zero values for variables
         """
         try:
-
+            
             # transform xhat into a dictionary
             xhatDict = dict(xhat)
             setVars = set(self.variables())
@@ -985,14 +962,14 @@ class DipProblem(pulp.LpProblem, DipAPI):
             diff = setVars.symmetric_difference(setXhatVars)
             if len(diff) > 0:
                 raise DipError("Solution and variable list don't match in solveHeuristics")
-
+    
             # transform costs into a dictionary
             costDict = dict(costX)
             setCostVars = set(costDict.keys())
             diff = setVars.symmetric_difference(setCostVars)
             if len(diff) > 0:
                 raise DipError("Cost and variable list don't match in solveHeuristics")
-
+    
             sols = self.heuristics(self, xhatDict, costDict)
             if sols is not None:
                 if len(sols) > 0:
@@ -1017,7 +994,7 @@ class DipProblem(pulp.LpProblem, DipAPI):
         dictionary of non-zero values for variables
         """
         try:
-
+          
             bvs = self.init_vars(self)
             if bvs is not None:
                 if len(bvs) > 0:
@@ -1028,13 +1005,14 @@ class DipProblem(pulp.LpProblem, DipAPI):
         except Exception as ex:
             errorStr = "Error in generateInitVars\n%s" % ex
             raise DipError(errorStr)
-
+  
 
 class RelaxationCollection(object):
     """
     A simple defaultdict for holding relaxation problems
     """
     PROBLEM_CLASS = pulp.LpProblem
+
 
     def __init__(self, parent):
         self.parent = parent
